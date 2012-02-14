@@ -128,6 +128,7 @@ private
       r = ''
       error_placement = options.delete(:error_placement) || @options[:error_placement] || Labelify.default_error_placement || :inside_label
       label_placement = options.delete(:label_placement) || @options[:label_placement] || Labelify.default_label_placement || :before_field
+      after_field = options.delete(:after_field)
       
       invisible = @options[:no_label_for].any? do |matcher|
         case matcher
@@ -152,6 +153,7 @@ private
       r << @template.send(selector, @object_name, *(args << objectify_options(options)), &block)
       r << inline_error_messages(method_name) if error_placement == :after_field
       r << label_content if !label_content.nil? && label_placement == :after_field
+      r << after_field if after_field.present?
 
       invisible || label_value == false ? r : content_tag(:div, r, :class => 'field')
     end
