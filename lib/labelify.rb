@@ -24,7 +24,11 @@ module Labelify
   def labelled_form_for(object_name, *args, &proc) # :yields: form_builder
     object, options = collect_arguments(object_name, *args, &proc)
     render_base_errors(object)
-    form_for(object_name, object, options, &proc)
+    if object_name.is_a? Symbol
+      form_for(object, options.merge(:as => object_name), &proc)
+    else
+      form_for(object_name, object, options, &proc)
+    end    
   end
 
   # Create a scope around a model object like +form_for+ but without rendering +form+ tags.
@@ -48,8 +52,8 @@ private
   end
 
   def render_base_errors(object)
-    if object.respond_to?(:errors) && object.errors.on(:base)
-      messages = object.errors.on(:base)
+    if object.respond_to?(:errors) && !Labelify.errors_on(object, :base).empty?
+      messages = Labelify.errors_on(object, :base)
       messages = messages.to_sentence if messages.respond_to? :to_sentence
       concat(content_tag(:span, h(messages), :class => 'error_message'))
     end
@@ -96,7 +100,7 @@ private
       case record_or_name_or_array
       when String, Symbol
         if nested_attributes_association?(record_or_name_or_array)
-          return fields_for_with_nested_attributes(record_or_name_or_array, args, block)
+          return fields_for_with_nested_attributes(record_or_name_or_array, args, block).html_safe
         else
           name = "#{object_name}#{index}[#{record_or_name_or_array}]"
         end
@@ -110,7 +114,12 @@ private
         args.unshift(object)
       end
 
-      @template.fields_for(name, *args, &block)
+      @template.fields_for(name, *args, &block).html_safe
+    end
+
+    def test_fields_for(record_or_name_or_array, *args, &block)
+      "<p>asdfsdafsadfsadf</p>".html_safe
+
     end
 
     # Pass methods to underlying template hoping to hit some homegrown form helper method.
@@ -206,8 +215,8 @@ private
 
     # Error messages for given field, concatenated with +to_sentence+.
     def inline_error_messages(method_name)
-      if @object.respond_to?(:errors) && @object.errors.on(method_name.to_s)
-        messages = @object.errors.on(method_name.to_s)
+      if @object.respond_to?(:errors) && !Labelify.errors_on(@object, method_name.to_s).empty?
+        messages = Labelify.errors_on(@object, method_name.to_s)
         messages = messages.kind_of?(Array) ? messages.map{|m|t(m)}.to_sentence : t(messages)
         content_tag(:span, messages, :class => 'error_message')
       else
@@ -292,11 +301,11 @@ private
 
     def fields_for_nested_model(name, object, args, block)
       if object.new_record?
-        @template.fields_for(name, object, *args, &block)
+        @template.fields_for(name, object, *args, &block).html_safe
       else
         @template.fields_for(name, object, *args) do |builder|
           @template.concat builder.hidden_field(:id)
-          block.call(builder)
+          block.call(builder).html_safe
         end
       end
     end
