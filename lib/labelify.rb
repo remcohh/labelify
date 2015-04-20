@@ -34,11 +34,13 @@ module Labelify
   def labelled_form_for(object_name, *args, &proc) # :yields: form_builder
     object, options = collect_arguments(object_name, *args, &proc)
     render_base_errors(object)
-    if object_name.is_a? Symbol
-      form_for(object, options.merge(:as => object_name), &proc)
-    else
-      form_for(object_name, object, options, &proc)
-    end    
+    #form_for(object, options, &proc)
+    # begin
+    #   object_name.to_s.camelize.try(:constantize)
+    #   form_for(object, options.merge(:as => object_name), &proc)        
+    # rescue
+    form_for(object_name, object, options, &proc)
+    # end
   end
 
   # Create a scope around a model object like +form_for+ but without rendering +form+ tags.
@@ -126,10 +128,6 @@ private
       @template.fields_for(name, *args, &block).html_safe
     end
 
-    def test_fields_for(record_or_name_or_array, *args, &block)
-      "<p>asdfsdafsadfsadf</p>".html_safe
-
-    end
 
     # Pass methods to underlying template hoping to hit some homegrown form helper method.
     # Including an option with the name +label+ will have the following effect:
@@ -253,11 +251,11 @@ private
     end
 
     # Scope a piece of the form to another object.
-    def with_object(object_name, object = nil)
+    def with_object(object_name, object = nil, &proc)
       object ||= eval("@#{object_name}", @options[:binding])
       old_object, old_object_name = @object, @object_name
       @object_name, @object = object_name, object
-      yield self
+      capture(&proc)
     ensure
       @object, @object_name = old_object, old_object_name
     end
