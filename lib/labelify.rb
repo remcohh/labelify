@@ -124,8 +124,7 @@ private
         name = "#{object_name}#{index}[#{ActionController::RecordIdentifier.singular_class_name(object)}]"
         args.unshift(object)
       end
-
-      @template.fields_for(name, *args, &block).html_safe
+      @template.fields_for(name, *args, &block)
     end
 
 
